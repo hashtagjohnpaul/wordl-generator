@@ -1,0 +1,5 @@
+{
+  "name": "Wordl Game Generator",
+  "description": "Create and share your own Wordle-style puzzle games. Set a list of words and a secret phrase that is revealed upon completion. Generate a unique link to send to friends for them to play.",
+  "requestFramePermissions": []
+}
