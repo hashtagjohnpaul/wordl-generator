@@ -1,14 +1,19 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import type { GameState } from '../types';
+import { getGuessStatuses } from '../utils';
+import { MAX_GUESSES } from '../constants';
+
 
 interface ModalProps {
   gameState: GameState;
   secretPhrase: string;
   solution: string;
+  history: { guesses: string[]; solution: string }[];
 }
 
-const Modal: React.FC<ModalProps> = ({ gameState, secretPhrase, solution }) => {
+const Modal: React.FC<ModalProps> = ({ gameState, secretPhrase, solution, history }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  
   if (gameState !== 'won' && gameState !== 'lost') return null;
 
   const handleCreateNew = () => {
@@ -18,6 +23,38 @@ const Modal: React.FC<ModalProps> = ({ gameState, secretPhrase, solution }) => {
   const handleTryAgain = () => {
     window.location.reload();
   }
+
+  const handleShare = () => {
+    const emojiMap = {
+      correct: '🟩',
+      present: '🟨',
+      absent: '⬛',
+    };
+    
+    let shareText = `My Wordl Puzzle!\n\n`;
+    
+    history.forEach((wordResult, index) => {
+        const guessCount = wordResult.guesses.length;
+        const result = wordResult.guesses[guessCount - 1] === wordResult.solution ? guessCount : 'X';
+        shareText += `Word ${index + 1} (${result}/${MAX_GUESSES})\n`;
+        wordResult.guesses.forEach(guess => {
+            const statuses = getGuessStatuses(guess, wordResult.solution);
+            shareText += statuses.map(s => emojiMap[s]).join('') + '\n';
+        });
+        shareText += '\n';
+    });
+
+    if (gameState === 'won') {
+        shareText += "I solved it! ✨";
+    } else {
+        shareText += "I couldn't solve it. 😔";
+    }
+
+    navigator.clipboard.writeText(shareText).then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    });
+  };
 
   const isWin = gameState === 'won';
 
@@ -44,6 +81,12 @@ const Modal: React.FC<ModalProps> = ({ gameState, secretPhrase, solution }) => {
         )}
 
         <div className="mt-8 flex flex-col space-y-3">
+            <button
+              onClick={handleShare}
+              className="w-full py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-md text-white font-bold transition"
+            >
+              {isCopied ? 'Copied!' : 'Share Results'}
+            </button>
           {!isWin && (
               <button 
                 onClick={handleTryAgain}

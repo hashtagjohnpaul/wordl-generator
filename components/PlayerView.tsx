@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { GameData, LetterStatuses, GameState, LetterStatus } from '../types';
+import type { GameData, LetterStatuses, GameState } from '../types';
 import { MAX_GUESSES } from '../constants';
 import Grid from './Grid';
 import Keyboard from './Keyboard';
@@ -23,6 +22,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({ gameData }) => {
   const [letterStatuses, setLetterStatuses] = useState<LetterStatuses>({});
   const [gameState, setGameState] = useState<GameState>('playing');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [gameHistory, setGameHistory] = useState<{ guesses: string[]; solution: string }[]>([]);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -83,18 +83,29 @@ const PlayerView: React.FC<PlayerViewProps> = ({ gameData }) => {
       
       setLetterStatuses(newLetterStatuses);
 
-      if (currentGuess === solution) {
+      const isCorrect = currentGuess === solution;
+
+      if (isCorrect) {
+        const historyEntry = { guesses: newGuesses.slice(0, currentTurn + 1), solution };
+        const newHistory = [...gameHistory, historyEntry];
+        setGameHistory(newHistory);
+
         if (currentWordIndex === words.length - 1) {
           setGameState('won');
         } else {
+          showToast('Correct! Next word...');
           setTimeout(() => {
             setCurrentWordIndex(prev => prev + 1);
             resetForNewWord();
-          }, 2000);
+          }, 1500);
         }
       } else if (currentTurn === MAX_GUESSES - 1) {
+        const historyEntry = { guesses: newGuesses.slice(0, currentTurn + 1), solution };
+        const newHistory = [...gameHistory, historyEntry];
+        setGameHistory(newHistory);
         setGameState('lost');
       }
+
 
       setCurrentTurn(prev => prev + 1);
       setCurrentGuess('');
@@ -103,7 +114,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({ gameData }) => {
     } else if (currentGuess.length < wordLength && /^[a-zA-Z]$/.test(key)) {
       setCurrentGuess(prev => prev + key.toLowerCase());
     }
-  }, [currentGuess, currentTurn, gameState, guesses, wordLength, solution, words, currentWordIndex, letterStatuses, resetForNewWord]);
+  }, [currentGuess, currentTurn, gameState, guesses, wordLength, solution, words, currentWordIndex, letterStatuses, resetForNewWord, gameHistory]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -132,7 +143,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({ gameData }) => {
       />
       <Keyboard onKeyPress={processInput} letterStatuses={letterStatuses} />
       {(gameState === 'won' || gameState === 'lost') && (
-        <Modal gameState={gameState} secretPhrase={phrase} solution={solution} />
+        <Modal gameState={gameState} secretPhrase={phrase} solution={solution} history={gameHistory} />
       )}
     </div>
   );

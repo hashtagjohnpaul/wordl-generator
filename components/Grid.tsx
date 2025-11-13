@@ -1,7 +1,7 @@
-
 import React from 'react';
 import type { LetterStatus } from '../types';
 import { MAX_GUESSES } from '../constants';
+import { getGuessStatuses } from '../utils';
 
 interface GridProps {
   guesses: string[];
@@ -10,21 +10,6 @@ interface GridProps {
   solution: string;
   wordLength: number;
 }
-
-const getTileStatus = (letter: string, index: number, solution: string): LetterStatus => {
-    if (solution[index] === letter) {
-      return 'correct';
-    }
-    if (solution.includes(letter)) {
-      const solutionCount = solution.split('').filter(l => l === letter).length;
-      const guessCount = solution.substring(0, index + 1).split('').filter((l, i) => l === letter && solution[i] === l).length;
-      const presentCount = solution.substring(0, index + 1).split('').filter((l, i) => l === letter && solution[i] !== l).length;
-      if (solutionCount > guessCount + presentCount -1) {
-          return 'present';
-      }
-    }
-    return 'absent';
-};
 
 const Tile: React.FC<{ letter?: string; status: LetterStatus; isRevealed?: boolean }> = ({ letter, status, isRevealed }) => {
   const statusClasses = {
@@ -60,34 +45,12 @@ const Row: React.FC<{ guess: string; solution: string; wordLength: number; isCom
   }
 
   if (isCompleted) {
-    const letters = guess.split('');
+    const statuses = getGuessStatuses(guess, solution);
     return (
         <div className="flex gap-1.5">
-        {letters.map((letter, i) => {
-            const tempSolution = solution.split('');
-            let status: LetterStatus = 'absent';
-            const letterCountInSolution = tempSolution.filter(l => l === letter).length;
-            let occurrencesInGuess = 0;
-            let correctPositions = 0;
-
-            for(let j=0; j<wordLength; j++){
-                if(guess[j] === letter && tempSolution[j] === letter) correctPositions++;
-            }
-
-            for(let j=0; j<=i; j++){
-                if(guess[j] === letter) occurrencesInGuess++;
-            }
-
-            if (tempSolution[i] === letter) {
-                status = 'correct';
-            } else if (tempSolution.includes(letter)) {
-                if(occurrencesInGuess <= letterCountInSolution) {
-                    status = 'present';
-                }
-            }
-            
-            return <Tile key={i} letter={letter} status={status} isRevealed={true} />;
-        })}
+        {guess.split('').map((letter, i) => (
+             <Tile key={i} letter={letter} status={statuses[i]} isRevealed={true} />
+        ))}
         </div>
     );
   }
